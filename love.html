@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>可以成为我的恋人吗？</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(180deg, #fdf0f4 0%, #fce4ec 100%);
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    height: 100vh;
+    max-height: 750px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  /* 小猫 */
+  .cat {
+    font-size: 100px;
+    line-height: 1;
+    margin-bottom: 30px;
+    animation: floatCat 2s ease-in-out infinite;
+    filter: drop-shadow(0 8px 10px rgba(0,0,0,0.08));
+  }
+  @keyframes floatCat {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-12px) rotate(2deg); }
+  }
+
+  .question {
+    font-size: 24px;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 40px;
+    text-align: center;
+    letter-spacing: 1px;
+    min-height: 34px;
+  }
+
+  .btn-area {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 16px;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-family: inherit;
+    outline: none;
+  }
+
+  .yes {
+    padding: 18px 55px;
+    background: #ff6b81;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(255, 107, 129, 0.4);
+    margin-right: 20px;
+    position: relative;
+    z-index: 2;
+  }
+  .yes:active { transform: scale(0.95); }
+
+  .no {
+    padding: 18px 40px;
+    background: #5b9bf5;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(91, 155, 245, 0.35);
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+  }
+
+  /* 彩蛋提示 */
+  .toast {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* 成功页面 */
+  .success {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg, #fff0f5, #ffd6e8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 99;
+    padding: 30px;
+    text-align: center;
+    animation: popIn 0.5s ease;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .success .big {
+    font-size: 90px;
+    animation: beat 0.9s infinite;
+  }
+  @keyframes beat {
+    0%, 100% { transform: scale(1); }
+    30% { transform: scale(1.2); }
+    60% { transform: scale(1.05); }
+  }
+  .success h2 {
+    color: #ff4d6d;
+    font-size: 26px;
+    margin: 20px 0 10px;
+  }
+  .success p {
+    color: #886070;
+    font-size: 16px;
+    line-height: 1.8;
+  }
+
+  .heart-fall {
+    position: fixed;
+    top: -5vh;
+    font-size: 22px;
+    pointer-events: none;
+    animation: fall linear infinite;
+    z-index: 100;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="cat" id="cat">🐱</div>
+  <div class="question" id="question">可以成为我的恋人吗？</div>
+
+  <div class="btn-area" id="btnArea">
+    <button class="btn yes" id="yesBtn">可以</button>
+    <button class="btn no" id="noBtn">不要</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+  const question = document.getElementById('question');
+  const cat = document.getElementById('cat');
+  const yesBtn = document.getElementById('yesBtn');
+  const noBtn = document.getElementById('noBtn');
+  const btnArea = document.getElementById('btnArea');
+  const toast = document.getElementById('toast');
+
+  // ===== 点“可以”的文案序列（越点越甜）=====
+  const yesTexts = [
+    "可以成为我的恋人吗？",
+    "那……可以做我女朋友吗？",
+    "真的吗？我超认真的！",
+    "那我以后每天都说早安晚安～",
+    "还想和你一起看很多很多次日落",
+    "拉钩，一百年不许变！",
+    "嘿嘿，你终于答应啦！"
+  ];
+
+  // ===== 点“不要”的文案序列（越点越委屈）=====
+  const noTexts = [
+    "可以成为我的恋人吗？",
+    "真的不要吗？再想想嘛～",
+    "我超乖的，会对你很好很好！",
+    "那……我等你，多久都等。",
+    "你忍心看我一个人吗？🥺",
+    "小猫都替你着急了！",
+    "好吧……那我再问最后一次！"
+  ];
+
+  let yesIndex = 0;
+  let noIndex = 0;
+
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => toast.classList.remove('show'), 1200);
+  }
+
+  // ===== 点“可以” =====
+  yesBtn.addEventListener('click', () => {
+    yesIndex++;
+    if (yesIndex < yesTexts.length) {
+      question.textContent = yesTexts[yesIndex];
+      // 按钮稍微长大一点
+      const scale = 1 + yesIndex * 0.06;
+      yesBtn.style.transform = `scale(${scale})`;
+      noBtn.style.transform = `scale(${Math.max(0.4, 1 - yesIndex * 0.12)})`;
+      noBtn.style.opacity = Math.max(0.3, 1 - yesIndex * 0.12);
+
+      // 随机换猫猫表情
+      const cats = ["🐱", "😺", "😸", "😻", "🥰", "😽"];
+      cat.textContent = cats[Math.min(yesIndex, cats.length - 1)];
+
+      // 小提示
+      if (yesIndex === 2) showToast("你点得好快呀 💕");
+      if (yesIndex === 4) showToast("小猫都害羞了 😳");
+    }
+
+    // 最后一次点击 → 成功页面
+    if (yesIndex >= yesTexts.length - 1) {
+      showSuccess();
+    }
+  });
+
+  // ===== 点“不要” =====
+  noBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    noIndex++;
+
+    // “不要”按钮会缩小 + 随机跑位
+    const shrink = Math.max(0.35, 1 - noIndex * 0.15);
+    noBtn.style.transform = `scale(${shrink})`;
+    noBtn.style.opacity = Math.max(0.4, 1 - noIndex * 0.15);
+
+    // 随机移动位置（在按钮区域里乱跑）
+    const maxX = 60;
+    const maxY = 50;
+    const randomX = (Math.random() - 0.5) * 2 * maxX;
+    const randomY = (Math.random() - 0.5) * 2 * maxY;
+    noBtn.style.marginLeft = randomX + 'px';
+    noBtn.style.marginTop = randomY + 'px';
+
+    // 文案变化
+    if (noIndex < noTexts.length) {
+      question.textContent = noTexts[noIndex];
+    }
+
+    // 猫猫委屈
+    const sadCats = ["🐱", "😿", "🙀", "😾", "😿", "🥺", "😭"];
+    cat.textContent = sadCats[Math.min(noIndex, sadCats.length - 1)];
+
+    // 提示
+    if (noIndex === 1) showToast("不可以拒绝哦～");
+    if (noIndex === 3) showToast("按钮怎么变小了 😳");
+    if (noIndex === 5) showToast("再点它就要消失啦！");
+
+    // 如果“不要”被点太多次，直接把它藏起来
+    if (noIndex >= 6) {
+      noBtn.style.display = 'none';
+      showToast("现在只能点“可以”啦 💗");
+    }
+
+    // 如果“不要”被点满，也自动触发成功（可选，温柔一点）
+    if (noIndex >= 8) {
+      showSuccess();
+    }
+  });
+
+  // ===== 成功页面 =====
+  function showSuccess() {
+    // 防止重复触发
+    if (document.querySelector('.success')) return;
+
+    const success = document.createElement('div');
+    success.className = 'success';
+    success.innerHTML = `
+      <div class="big">💖</div>
+      <h2>耶！你答应我啦！</h2>
+      <p>从今天起，你就是我的恋人啦～<br>以后请多多指教，我的小朋友 🥰</p>
+    `;
+    document.body.appendChild(success);
+
+    // 撒爱心
+    const hearts = ["💕", "💖", "🌸", "✨", "💗", "🎀", "💞"];
+    for (let i = 0; i < 40; i++) {
+      const h = document.createElement('div');
+      h.className = 'heart-fall';
+      h.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+      h.style.left = Math.random() * 100 + 'vw';
+      h.style.animationDuration = (3 + Math.random() * 4) + 's';
+      h.style.animationDelay = Math.random() * 2 + 's';
+      h.style.fontSize = (16 + Math.random() * 22) + 'px';
+      document.body.appendChild(h);
+    }
+  }
+</script>
+
+</body>
+</html>
